@@ -1,61 +1,215 @@
-# Demo Devices Template
+# myenergi
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Follow and drive your **myenergi** devices from Gladys: the **zappi** car
+charger, the **eddi** hot water diverter, the **harvi** wireless clamp sensor
+and the **libbi** battery. Gladys reads them through the myenergi cloud, the
+same service as the myenergi app: solar and grid power, charge state and
+energy of the car, hot water diverted from the solar surplus, battery level.
+It changes the zappi charge mode, starts and stops the boosts, and fires a
+scene when a charge is complete.
 
-## What you get
+> **Developed without the hardware: feedback welcome.** This integration was
+> built and tested against the answers of the myenergi cloud published by the
+> [pymyenergi](https://github.com/CJNE/pymyenergi) library, not against real
+> devices. If something does not work as described, please say so on the
+> [Gladys forum](https://community.gladysassistant.com) or in the
+> [issues](https://github.com/guim31/gladys-myenergi/issues).
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+This integration is not affiliated with myenergi Ltd.
 
-## Configuration
+## What you need
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+- Gladys Assistant 5.2.0 or later.
+- A myenergi **hub** (or a zappi or eddi acting as hub), connected to the
+  internet, with your devices paired to it in the myenergi app.
+- The **serial number** of the hub and an **API key**. Sign in to your
+  [myenergi account](https://myaccount.myenergi.com), open **Products**: the
+  serial number is shown next to the hub, with a button to generate an API
+  key (myenergi article:
+  [How do I get an API key?](https://support.myenergi.com/hc/en-gb/articles/5069627351185-How-do-I-get-an-API-key-)).
+  The key is shown only once: copy it.
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+## Set up
 
-## Actions
+1. Install the integration from the Gladys catalog.
+2. In **Configuration**, enter the **Hub serial number** (digits only) and the
+   **API key**, then save.
+3. Click **Test the connection**: the message under the button lists the
+   devices found and the myenergi server of your account.
+4. Open the **Discover** tab: one device for the installation, plus one per
+   zappi, eddi, harvi and libbi. Click **Add**, pick a room, save. Only the
+   devices you add are followed.
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+Options:
+
+- **Refresh interval**: how often the myenergi cloud is read, from 1 minute
+  (default) to 10 minutes.
+- **Language of the texts**: English, French (default), German or Spanish.
+  Used for the feature names (given when a device is added), the status
+  labels and the messages of the scenes.
+
+## The devices
+
+### Installation
+
+The device named after your site in the myenergi app.
+
+| Feature      | What it is                                                                            |
+| ------------ | ------------------------------------------------------------------------------------- |
+| Grid power   | Power exchanged with the grid, in W: positive when importing, negative when exporting |
+| Solar power  | Power of your solar panels, in W                                                      |
+| Grid voltage | Voltage measured by a zappi, eddi or libbi, in V                                      |
+
+The grid and solar values are those of the clamps typed _Grid_ and
+_Generation_ in the myenergi app, summed over every device, as the myenergi
+app computes them.
+
+### zappi
+
+| Feature        | What it is                                                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Connector      | Available (no car), Occupied (car plugged in) or Faulted                                                                              |
+| Charge         | Charging, Vehicle connected, Paused (vehicle), Paused (charger: waiting for surplus, or Stop mode), Idle (charge complete, or no car) |
+| Car plugged in | Yes / no: the simplest way to start a scene when you plug in                                                                          |
+| Charge mode    | **Command**: Fast, Eco, Eco+ (solar surplus only) or Stop                                                                             |
+| Charge power   | Power sent to the car, in kW                                                                                                          |
+| Session energy | Energy added to the car since it was plugged in, in kWh                                                                               |
+| Energy today   | Energy the zappi delivered today (solar and grid), in kWh                                                                             |
+| Total energy   | Cumulative energy delivered since the zappi was added, in kWh                                                                         |
+| Clamp _n_ (…)  | Power read by each clamp assigned in the myenergi app, in W                                                                           |
+
+**Total energy** is an index Gladys uses for its energy tracking: it computes
+the consumption of every half hour and its cost from your energy contract.
+The myenergi cloud has no lifetime counter: the integration adds up the daily
+history, day after day, and keeps the result under `/data`.
+
+### eddi
+
+| Feature                                  | What it is                                                                   |
+| ---------------------------------------- | ---------------------------------------------------------------------------- |
+| Status                                   | Waiting for surplus, Diverting, Boosting, Max temperature reached or Stopped |
+| Heating                                  | Yes while the eddi heats the water (surplus or boost)                        |
+| Heating power                            | Power sent to the heater, in W                                               |
+| Diverted today                           | Solar surplus diverted to the water today, in kWh                            |
+| Total energy                             | Cumulative energy of the eddi (surplus and boost), in kWh, like the zappi    |
+| Surplus diversion                        | **Command**: on (normal mode) or stopped                                     |
+| Boost                                    | Yes while a boost runs                                                       |
+| Boost time left                          | Minutes left of the boost in progress                                        |
+| Probe 1 temperature, Probe 2 temperature | The temperature probes of the tank, when they are connected                  |
+| Clamp _n_ (…)                            | Power read by each assigned clamp, in W                                      |
+
+Boosts are started from the widget or a scene, for a set time: there is no
+on/off switch for heating, on purpose (a boost always ends by itself).
+
+### harvi
+
+One power feature per clamp assigned in the myenergi app, in W. A harvi with
+no clamp assigned is not published.
+
+### libbi
+
+| Feature         | What it is                                                 |
+| --------------- | ---------------------------------------------------------- |
+| Battery level   | State of charge, in %                                      |
+| Charge power    | Power going into the battery, in W                         |
+| Discharge power | Power coming out of the battery, in W                      |
+| Status          | Charging, Discharging, Idle, Battery full, Stopped, Fault… |
+| Clamp _n_ (…)   | Power read by each assigned clamp, in W                    |
+
+The libbi is read only: its modes and its charge target need the myenergi
+app account (not the API key), which this integration does not use.
+
+## Dashboard widget
+
+Add the **myenergi** widget to a dashboard. It shows four tiles (solar, grid,
+the power of the zappi, the power of the eddi), the state of the zappi and of
+the eddi, the energy of the session and the energy diverted today. In its
+settings, pick a zappi and an eddi when you have several.
+
+Buttons:
+
+- **Boost the car**: asks for the energy to add, in kWh, and optionally a
+  time it must be ready by (smart boost). Shown in Eco and Eco+ modes only:
+  in Fast mode the zappi already charges at full power.
+- **Boost hot water**: asks for a duration (1 to 240 minutes) and the heater.
+- **Stop the boost**: stops every boost in progress, after a confirmation.
+  Shown while a boost runs.
+
+The tiles follow the live values of the devices added to Gladys. When the
+myenergi cloud does not answer, the widget shows the last reading and says so.
 
 ## Scenes
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+### Trigger
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+- **zappi charge completed**: the zappi has finished charging the car.
+  Optional filter: the zappi. Variables: the energy of the session (kWh) and
+  the name of the zappi, to put in a message.
 
-## Dashboard
+For the other events (car plugged in, solar power above a threshold, battery
+level…), use the usual _Device state_ trigger on the features above.
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+### Actions
+
+- **Set the zappi charge mode**: Fast, Eco, Eco+ or Stop.
+- **Boost the zappi**: adds this energy (1 to 99 kWh) from the grid, now, or
+  ready by a time (`07:30`) with a smart boost. Eco and Eco+ modes only.
+- **Stop the zappi boost**.
+- **Boost the eddi**: heats the water from the grid for 1 to 240 minutes, on
+  heater 1 or 2.
+- **Stop the eddi boost**: cancels the boost of both heaters.
+
+### Scene ideas
+
+- _Cheap night tariff_: at 23:00, **Set the zappi charge mode** to Fast; at
+  06:30, back to Eco+.
+- _Car ready for a trip_: on a calendar event "trip", **Boost the zappi** of
+  30 kWh ready by `07:00`.
+- _Charge finished_: on **zappi charge completed**, send "The car is charged:
+  `{{triggerEvent.data.energy_kwh}}` kWh added" to your phone.
+- _Cloudy day_: at 17:00, if **Diverted today** is below 2 kWh, **Boost the
+  eddi** for 60 minutes.
+
+## Refresh and API usage
+
+- One request to the myenergi cloud reads every device, at the refresh
+  interval (1 minute by default, never faster). The hourly history (energy of
+  the day, total energy) is read every 10 minutes per zappi and eddi added to
+  Gladys, and once more just after midnight to close the day.
+- Nothing is read while no device is added, except when you click **Test the
+  connection** or search the Discover tab.
+- A command (mode, boost) is one request, followed by a reading 5 seconds
+  later to show what the device applied.
+- The API is the one of the myenergi app; myenergi publishes no quota for it.
+  If it answers "too many requests", raise the refresh interval.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **Serial number or API key refused by myenergi**: check the serial number
+  (digits only, the one of the hub) and generate a new API key; a new hub
+  needs a new key.
+- **The myenergi cloud does not answer**: the integration keeps trying at
+  every interval and says when it answers again; the widget shows the last
+  reading meanwhile. The myenergi app works through the same cloud: check it.
+- **Total energy starts low**: it starts from the energy of the day the device
+  is added. Gladys tracks the increases, not the starting value.
+- **A clamp appears or disappears**: clamps are published as assigned in the
+  myenergi app; after a change there, the Discover tab offers to update the
+  device.
+- More details: set the environment variable `LOG_LEVEL=debug` on the
+  integration and read its logs. The API key never appears in them.
+
+## Limits
+
+- Developed without the hardware: the values and the commands follow the
+  answers documented by pymyenergi; some fields (the zappi charge power, the
+  libbi power sign) are interpreted, not verified on a device.
+- Cloud only: no local control, and nothing works when the myenergi cloud or
+  your internet connection is down.
+- Not supported: unlocking the zappi (left out on purpose, for safety), the
+  device priorities, the minimum green level, the libbi modes and charge
+  target (they need the app account).
+- **Total energy** is priced by Gladys at your contract tariff, solar share
+  included: it is the cost the energy would have had from the grid.
+- The serial numbers shown come from the cloud; names are those given in the
+  myenergi app, read every 6 hours.
