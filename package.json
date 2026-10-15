@@ -1,6 +1,6 @@
 {
   "name": "gladys-myenergi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "myenergi integration for Gladys Assistant: zappi, eddi, harvi and libbi through the myenergi cloud.",
   "type": "module",

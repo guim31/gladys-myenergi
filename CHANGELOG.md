@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-15
+
 ### Added
 
 - myenergi devices in Gladys, through the myenergi cloud (hub serial number and
@@ -32,4 +34,5 @@ the notes of the version's GitHub Release.
 - Every text in English, French, German and Spanish, with the user guide in
   the four languages.
 
-[Unreleased]: https://github.com/guim31/gladys-myenergi/commits/main
+[Unreleased]: https://github.com/guim31/gladys-myenergi/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/guim31/gladys-myenergi/releases/tag/v1.0.1
