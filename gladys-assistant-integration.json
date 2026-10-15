@@ -1,177 +1,601 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "myenergi",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "zappi, eddi, harvi and libbi by myenergi: charge, hot water, solar surplus and boosts.",
+    "fr": "zappi, eddi, harvi et libbi de myenergi : recharge, eau chaude, surplus solaire et boosts.",
+    "de": "zappi, eddi, harvi und libbi von myenergi: Laden, Warmwasser, Solarüberschuss und Boosts.",
+    "es": "zappi, eddi, harvi y libbi de myenergi: carga, agua caliente, excedente solar y refuerzos."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
-  "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "docker_image": "ghcr.io/guim31/gladys-myenergi:1.0.0",
+  "gladys_version": ">=5.2.0",
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-myenergi/main/cover.png",
+  "categories": ["energy"],
+  "transports": ["cloud"],
   "config_schema": [
     {
-      "key": "intro",
+      "key": "account",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "myenergi account",
+        "fr": "Compte myenergi",
+        "de": "myenergi-Konto",
+        "es": "Cuenta myenergi"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Gladys reads your devices through the myenergi cloud, like the myenergi app. You need the serial number of your hub and an API key: sign in to your myenergi account, open Products, and generate an API key next to the hub. It is shown only once.",
+        "fr": "Gladys lit vos appareils par le cloud myenergi, comme l’appli myenergi. Il faut le numéro de série de votre hub et une clé d’API : connectez-vous à votre compte myenergi, ouvrez Produits et générez une clé d’API à côté du hub. Elle n’est affichée qu’une fois.",
+        "de": "Gladys liest deine Geräte über die myenergi-Cloud, wie die myenergi-App. Du brauchst die Seriennummer deines Hubs und einen API-Schlüssel: Melde dich in deinem myenergi-Konto an, öffne Produkte und erzeuge neben dem Hub einen API-Schlüssel. Er wird nur einmal angezeigt.",
+        "es": "Gladys lee sus aparatos a través de la nube de myenergi, como la aplicación myenergi. Necesita el número de serie de su hub y una clave de API: inicie sesión en su cuenta myenergi, abra Productos y genere una clave de API junto al hub. Solo se muestra una vez."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://myaccount.myenergi.com",
+          "label": {
+            "en": "myenergi account",
+            "fr": "Compte myenergi",
+            "de": "myenergi-Konto",
+            "es": "Cuenta myenergi"
+          }
+        },
+        {
+          "url": "https://support.myenergi.com/hc/en-gb/articles/5069627351185-How-do-I-get-an-API-key-",
+          "label": {
+            "en": "How to get an API key",
+            "fr": "Obtenir une clé d’API",
+            "de": "API-Schlüssel erhalten",
+            "es": "Obtener una clave de API"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "hub_serial",
+      "type": "string",
+      "label": {
+        "en": "Hub serial number",
+        "fr": "Numéro de série du hub",
+        "de": "Seriennummer des Hubs",
+        "es": "Número de serie del hub"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "description": {
+        "en": "Digits only, as shown under Products in the myenergi account.",
+        "fr": "Chiffres seulement, tel qu’affiché dans Produits du compte myenergi.",
+        "de": "Nur Ziffern, wie unter Produkte im myenergi-Konto angezeigt.",
+        "es": "Solo cifras, como aparece en Productos de la cuenta myenergi."
+      },
+      "placeholder": {
+        "en": "e.g. 12345678",
+        "fr": "ex. 12345678",
+        "de": "z. B. 12345678",
+        "es": "p. ej. 12345678"
+      },
+      "required": true
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "api_key",
+      "type": "secret",
+      "label": {
+        "en": "API key",
+        "fr": "Clé d'API",
+        "de": "API-Schlüssel",
+        "es": "Clave de API"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "description": {
+        "en": "Generated in the myenergi app. Stored in Gladys, never written to the logs.",
+        "fr": "Générée dans l'appli myenergi. Stockée dans Gladys, jamais écrite dans les journaux.",
+        "de": "In der myenergi-App erzeugt. In Gladys gespeichert, nie in die Protokolle geschrieben.",
+        "es": "Generada en la aplicación myenergi. Guardada en Gladys, nunca escrita en los registros."
+      },
+      "required": true
     },
     {
-      "key": "unit",
+      "key": "refresh_interval",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Intervalle de rafraîchissement",
+        "de": "Aktualisierungsintervall",
+        "es": "Intervalo de actualización"
+      },
+      "description": {
+        "en": "How often the myenergi cloud is read. One minute at most, like the myenergi app.",
+        "fr": "Fréquence de lecture du cloud myenergi. Une minute au plus, comme l'appli myenergi.",
+        "de": "Wie oft die myenergi-Cloud gelesen wird. Höchstens jede Minute, wie die myenergi-App.",
+        "es": "Con qué frecuencia se lee la nube de myenergi. Como mucho cada minuto, como la aplicación."
+      },
       "required": false,
-      "default": "celsius",
+      "default": "60",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "60",
+          "label": {
+            "en": "1 minute",
+            "fr": "1 minute",
+            "de": "1 Minute",
+            "es": "1 minuto"
+          }
+        },
+        {
+          "value": "120",
+          "label": {
+            "en": "2 minutes",
+            "fr": "2 minutes",
+            "de": "2 Minuten",
+            "es": "2 minutos"
+          }
+        },
+        {
+          "value": "300",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the texts",
+        "fr": "Langue des textes",
+        "de": "Sprache der Texte",
+        "es": "Idioma de los textos"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Feature names (given when a device is added), scene messages, status labels.",
+        "fr": "Noms des fonctionnalités (donnés à l'ajout d'un appareil), messages des scènes, libellés d'état.",
+        "de": "Namen der Funktionen (beim Hinzufügen eines Geräts vergeben), Szenenmeldungen, Statustexte.",
+        "es": "Nombres de las funciones (dados al añadir un aparato), mensajes de escenas, textos de estado."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "description": {
+        "en": "Reads the myenergi account now and lists the devices found.",
+        "fr": "Lit le compte myenergi maintenant et liste les appareils trouvés.",
+        "de": "Liest das myenergi-Konto sofort und listet die gefundenen Geräte auf.",
+        "es": "Lee la cuenta de myenergi ahora y enumera los aparatos encontrados."
+      },
+      "timeout_seconds": 45
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "charge_completed",
+      "label": {
+        "en": "zappi charge completed",
+        "fr": "Recharge zappi terminée",
+        "de": "zappi-Ladung beendet",
+        "es": "Carga del zappi terminada"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "The zappi has finished charging the car, with the energy added during the session.",
+        "fr": "La zappi a fini de recharger la voiture, avec l'énergie ajoutée pendant la session.",
+        "de": "Die zappi hat das Laden des Autos beendet, mit der in der Sitzung geladenen Energie.",
+        "es": "El zappi ha terminado de cargar el coche, con la energía añadida durante la sesión."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "label": {
+            "en": "zappi (empty: any)",
+            "fr": "zappi (vide : n'importe laquelle)",
+            "de": "zappi (leer: beliebig)",
+            "es": "zappi (vacío: cualquiera)"
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "energy_kwh",
+          "type": "number",
+          "label": {
+            "en": "Energy of the session (kWh)",
+            "fr": "Énergie de la session (kWh)",
+            "de": "Energie der Sitzung (kWh)",
+            "es": "Energía de la sesión (kWh)"
+          }
+        },
+        {
+          "key": "name",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "zappi name",
+            "fr": "Nom de la zappi",
+            "de": "Name der zappi",
+            "es": "Nombre del zappi"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "zappi_set_mode",
+      "label": {
+        "en": "Set the zappi charge mode",
+        "fr": "Changer le mode de charge de la zappi",
+        "de": "Lademodus der zappi ändern",
+        "es": "Cambiar el modo de carga del zappi"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Fast, Eco, Eco+ (solar surplus only) or Stop.",
+        "fr": "Rapide, Eco, Eco+ (surplus solaire seul) ou Arrêt.",
+        "de": "Schnell, Eco, Eco+ (nur Solarüberschuss) oder Stopp.",
+        "es": "Rápido, Eco, Eco+ (solo excedente solar) o Parada."
+      },
+      "timeout_seconds": 30,
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "zappi",
+            "fr": "zappi",
+            "de": "zappi",
+            "es": "zappi"
+          },
+          "required": true
+        },
+        {
+          "key": "mode",
+          "type": "select",
+          "label": {
+            "en": "Mode",
+            "fr": "Mode",
+            "de": "Modus",
+            "es": "Modo"
+          },
+          "required": true,
+          "default": "eco_plus",
+          "options": [
+            {
+              "value": "fast",
+              "label": {
+                "en": "Fast",
+                "fr": "Rapide",
+                "de": "Schnell",
+                "es": "Rápido"
+              }
+            },
+            {
+              "value": "eco",
+              "label": {
+                "en": "Eco",
+                "fr": "Eco",
+                "de": "Eco",
+                "es": "Eco"
+              }
+            },
+            {
+              "value": "eco_plus",
+              "label": {
+                "en": "Eco+",
+                "fr": "Eco+",
+                "de": "Eco+",
+                "es": "Eco+"
+              }
+            },
+            {
+              "value": "stop",
+              "label": {
+                "en": "Stop",
+                "fr": "Arrêt",
+                "de": "Stopp",
+                "es": "Parada"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "zappi_boost",
+      "label": {
+        "en": "Boost the zappi",
+        "fr": "Lancer un boost de la zappi",
+        "de": "Boost der zappi starten",
+        "es": "Iniciar un refuerzo del zappi"
+      },
+      "description": {
+        "en": "Adds this energy to the car from the grid, now or by a given time (Eco and Eco+ modes).",
+        "fr": "Ajoute cette énergie à la voiture depuis le réseau, tout de suite ou pour une heure donnée (modes Eco et Eco+).",
+        "de": "Lädt diese Energie aus dem Netz ins Auto, sofort oder bis zu einer Uhrzeit (Modi Eco und Eco+).",
+        "es": "Añade esta energía al coche desde la red, ahora o para una hora dada (modos Eco y Eco+)."
+      },
+      "timeout_seconds": 30,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "zappi",
+            "fr": "zappi",
+            "de": "zappi",
+            "es": "zappi"
+          },
+          "required": true
+        },
+        {
+          "key": "energy_kwh",
+          "type": "number",
+          "label": {
+            "en": "Energy to add (kWh)",
+            "fr": "Énergie à ajouter (kWh)",
+            "de": "Zu ladende Energie (kWh)",
+            "es": "Energía a añadir (kWh)"
+          },
+          "required": true,
+          "default": 10,
+          "min": 1,
+          "max": 99
+        },
+        {
+          "key": "ready_by",
+          "type": "string",
+          "label": {
+            "en": "Ready by (empty: now)",
+            "fr": "Prête pour (vide : tout de suite)",
+            "de": "Fertig um (leer: sofort)",
+            "es": "Lista a las (vacío: ahora)"
+          },
+          "placeholder": {
+            "en": "e.g. 07:30",
+            "fr": "ex. 07:30",
+            "de": "z. B. 07:30",
+            "es": "p. ej. 07:30"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "key": "zappi_stop_boost",
+      "label": {
+        "en": "Stop the zappi boost",
+        "fr": "Arrêter le boost de la zappi",
+        "de": "Boost der zappi stoppen",
+        "es": "Detener el refuerzo del zappi"
+      },
+      "description": {
+        "en": "Cancels the boost in progress, the zappi goes back to its mode.",
+        "fr": "Annule le boost en cours, la zappi revient à son mode.",
+        "de": "Bricht den laufenden Boost ab, die zappi kehrt zu ihrem Modus zurück.",
+        "es": "Cancela el refuerzo en curso, el zappi vuelve a su modo."
+      },
+      "timeout_seconds": 30,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "zappi",
+            "fr": "zappi",
+            "de": "zappi",
+            "es": "zappi"
+          },
           "required": true
         }
-      ],
-      "outputs": [
+      ]
+    },
+    {
+      "key": "eddi_boost",
+      "label": {
+        "en": "Boost the eddi",
+        "fr": "Lancer un boost de l'eddi",
+        "de": "Boost des eddi starten",
+        "es": "Iniciar un refuerzo del eddi"
+      },
+      "description": {
+        "en": "Heats the water from the grid for this long, on heater 1 or 2.",
+        "fr": "Chauffe l'eau depuis le réseau pendant cette durée, sur la résistance 1 ou 2.",
+        "de": "Heizt das Wasser so lange aus dem Netz, über Heizstab 1 oder 2.",
+        "es": "Calienta el agua desde la red durante este tiempo, con la resistencia 1 o 2."
+      },
+      "timeout_seconds": 30,
+      "fields": [
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "eddi",
+            "fr": "eddi",
+            "de": "eddi",
+            "es": "eddi"
+          },
+          "required": true
+        },
+        {
+          "key": "minutes",
+          "type": "number",
+          "label": {
+            "en": "Duration (minutes)",
+            "fr": "Durée (minutes)",
+            "de": "Dauer (Minuten)",
+            "es": "Duración (minutos)"
+          },
+          "required": true,
+          "default": 30,
+          "min": 1,
+          "max": 240
+        },
+        {
+          "key": "heater",
+          "type": "select",
+          "label": {
+            "en": "Heater",
+            "fr": "Résistance",
+            "de": "Heizstab",
+            "es": "Resistencia"
+          },
+          "required": true,
+          "default": "1",
+          "options": [
+            {
+              "value": "1",
+              "label": {
+                "en": "Heater 1",
+                "fr": "Résistance 1",
+                "de": "Heizstab 1",
+                "es": "Resistencia 1"
+              }
+            },
+            {
+              "value": "2",
+              "label": {
+                "en": "Heater 2",
+                "fr": "Résistance 2",
+                "de": "Heizstab 2",
+                "es": "Resistencia 2"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "eddi_stop_boost",
+      "label": {
+        "en": "Stop the eddi boost",
+        "fr": "Arrêter le boost de l'eddi",
+        "de": "Boost des eddi stoppen",
+        "es": "Detener el refuerzo del eddi"
+      },
+      "description": {
+        "en": "Cancels the boost in progress on both heaters.",
+        "fr": "Annule le boost en cours sur les deux résistances.",
+        "de": "Bricht den laufenden Boost auf beiden Heizstäben ab.",
+        "es": "Cancela el refuerzo en curso en las dos resistencias."
+      },
+      "timeout_seconds": 30,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "eddi",
+            "fr": "eddi",
+            "de": "eddi",
+            "es": "eddi"
+          },
+          "required": true
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "overview",
+      "label": {
+        "en": "myenergi",
+        "fr": "myenergi",
+        "de": "myenergi",
+        "es": "myenergi"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Solar, grid, zappi and eddi at a glance, with the boost buttons.",
+        "fr": "Solaire, réseau, zappi et eddi d'un coup d'œil, avec les boutons de boost.",
+        "de": "Solar, Netz, zappi und eddi auf einen Blick, mit den Boost-Tasten.",
+        "es": "Solar, red, zappi y eddi de un vistazo, con los botones de refuerzo."
+      },
+      "icon": "sun",
+      "action_timeout_seconds": 30,
+      "settings": [
+        {
+          "key": "zappi",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "zappi (empty: the first)",
+            "fr": "zappi (vide : la première)",
+            "de": "zappi (leer: die erste)",
+            "es": "zappi (vacío: el primero)"
+          },
+          "required": false
+        },
+        {
+          "key": "eddi",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "eddi (empty: the first)",
+            "fr": "eddi (vide : le premier)",
+            "de": "eddi (leer: der erste)",
+            "es": "eddi (vacío: el primero)"
+          },
+          "required": false
+        }
+      ]
     }
   ]
 }

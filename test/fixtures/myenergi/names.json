@@ -1,0 +1,32 @@
+{
+  "H12345678": [
+    {
+      "key": "E21000001",
+      "val": "Test Eddi 1"
+    },
+    {
+      "key": "Z11000001",
+      "val": "Test Zappi 1"
+    },
+    {
+      "key": "Z11000002",
+      "val": "Test Zappi 2"
+    },
+    {
+      "key": "H31000001",
+      "val": "Test Harvi 1"
+    },
+    {
+      "key": "H31000002",
+      "val": "Test Harvi 2"
+    },
+    {
+      "key": "L41000001",
+      "val": "Test Libbi 1"
+    },
+    {
+      "key": "siteName",
+      "val": "Test Site"
+    }
+  ]
+}

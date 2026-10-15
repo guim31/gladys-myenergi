@@ -16,12 +16,13 @@ its only runtime dependency. It started from the official JavaScript template.
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/hub.test.js              # one file
+node --test --test-name-pattern "zappi"   # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
 npx github:GladysAssistant/integration-store .   # store admission checks
+node scripts/probe.mjs                    # real cloud, read only (needs network)
 ```
 
 The CI (`.github/workflows/ci.yml`) runs `format:check`, `lint` and `test` on
@@ -32,15 +33,27 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+src/app.js                        registerHandlers(gladys, seams): every SDK handler -> the hub
+src/hub.js                        MyenergiHub: own refresh timer (+ onPoll fallback), states,
+                                  scene event, commands, connection status, transports
+src/myenergi/client.js            myenergi cloud: digest auth, director + ASN, commands
+src/myenergi/digest.js            HTTP digest (RFC 7616), no dependency
+src/myenergi/model.js             pure reading of the answers (status, names, history)
+src/devices.js                    Gladys devices (site, zappi, eddi, harvi, libbi) + feature states
+src/energy.js                     EnergyLedger: total energy index from the daily history
+src/clock.js                      local days in the TZ of Gladys (DST-aware)
+src/store.js                      /data/myenergi-state.json (atomic, coalesced writes)
+src/issues.js                     repeated failures logged once
+src/texts.js                      every container text, en/fr/de/es
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/widgets.js                    dashboard widget (manifest `widgets`) + its texts
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+scripts/probe.mjs                 read-only probe of the real cloud (run where there is network)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys, same sections
 test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+test/helpers/fakeCloud.js         in-memory myenergi cloud (real digest check, commands, history)
+test/fixtures/myenergi/           answers from pymyenergi's tests (MIT), anonymized
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +83,10 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in four languages (English, French, German with
+  "du", Spanish with "usted"): action messages, manifest texts, feature names,
+  widget texts, and `docs/en.md` / `fr.md` / `de.md` / `es.md`, kept in sync
+  with the same sections (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +248,37 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## myenergi : ce qu'il faut savoir (API et pièges)
+
+- **Aucune doc officielle** : la seule description publique de l'API est
+  `CJNE/pymyenergi` (MIT) et ses fixtures. Les noms de champs (`sta`, `pst`, `zmo`,
+  `div`, `che`, `ectt<n>`/`ectp<n>`, `tp1`, `rbt`, `soc`…) en viennent. Tout ce qui n'y est
+  pas vérifié est dit « interprété » dans le README.
+- **Authentification digest** (serial du hub + clé d'API). Le directeur
+  (`director.myenergi.net/cgi-jstatus-E`) renvoie l'en-tête `x_myenergi-asn` qui nomme le
+  serveur du compte ; pas d'en-tête = identifiants refusés (comme pymyenergi). Le client
+  refuse un ASN hors `*.myenergi.net` : sinon un en-tête suffirait à envoyer le digest
+  ailleurs. Après une erreur réseau ou 5xx, il redemande au directeur.
+- **Tout est en GET**, commandes comprises. Réponse d'une commande : `status` 0 = accepté
+  (hypothèse, non vérifiée sur un vrai compte), sinon refus.
+- **Boost zappi seulement en Eco / Eco+** (règle de pymyenergi) ; le bouton du widget n'est
+  proposé que dans ces modes. Annuler le boost de l'eddi : `-1-<résistance>-0`, envoyé aux
+  deux résistances (la seconde peut répondre une erreur, ignorée).
+- **Pas de compteur à vie** dans le cloud : l'« énergie totale » (`energy-sensor/index`,
+  dont le cœur dérive conso 30 min et coût) est reconstruite par `src/energy.js` depuis
+  l'historique horaire `cgi-jdayhour`, demandé en heures UTC depuis le minuit local (TZ de
+  Gladys, jours de 23/25 h gérés). Ne jamais publier la « énergie du jour » en
+  `energy-sensor/energy` : ce type est un index pour le cœur, sa remise à zéro quotidienne
+  fausserait le suivi. Elle est en `energy-sensor/index-today`.
+- `temperature-sensor/decimal` s'écrit `DEVICE_FEATURE_TYPES.SENSOR.DECIMAL` dans le SDK
+  (`TEMPERATURE_SENSOR` n'a que min/max/average/probe) : une faute ici fait refuser toute
+  la découverte en 400, d'où le test de conformité sur chaque scénario.
+- `electrical-vehicle-charge` n'accepte que `kilowatt` (pas `watt`) côté unités par
+  catégorie : la puissance de charge de la zappi est publiée en kW.
+- Les **champs d'un formulaire de bouton de widget** (labels, options) doivent être des
+  objets multilingues : une chaîne simple fait jeter le bouton (`validateWidgetContent`).
+- **Sécurité** : le déverrouillage de la zappi (`cgi-jlock`) n'est pas implémenté ; aucune
+  chauffe n'est exposée en interrupteur (le boost de l'eddi a toujours une durée).
+- Le proxy des sessions de code refuse `director.myenergi.net` : `scripts/probe.mjs` se
+  lance ailleurs.

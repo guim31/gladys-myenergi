@@ -1,45 +1,58 @@
 // -----------------------------------------------------------------------------
-// Integration configuration.
-//
-// The configuration is filled in by the user in Gladys, from the `config_schema`
-// declared in `gladys-assistant-integration.json`. The SDK fetches it for you
-// (`gladys.getConfig()`) and notifies you of every change through
-// `gladys.onConfigUpdated()`.
-//
-// This module only provides defaults and normalizes the received object, so the
-// rest of the code never has to deal with `undefined`.
+// Integration configuration: defaults (they mirror the `default` values of the
+// manifest `config_schema`, see test/manifest.test.js) and normalization, so
+// the rest of the code never deals with strings, blanks or `undefined`.
 // -----------------------------------------------------------------------------
 
-// Defaults: they MUST stay consistent with the `default` values declared in the
-// `config_schema` of the manifest.
+export const LANGUAGES = ['en', 'fr', 'de', 'es'];
+
+// Refresh intervals offered in the configuration, in seconds. One minute is
+// the fastest: the myenergi cloud is a shared service, the HACS integration
+// reads it every minute too.
+export const REFRESH_INTERVALS = ['60', '120', '300', '600'];
+
 export const DEFAULT_CONFIG = {
-  latitude: 48.8566, // Paris
-  longitude: 2.3522,
-  unit: 'celsius', // 'celsius' | 'fahrenheit'
-  // Seconds between two reads of the polled sensors. Gladys polls at most once
-  // a minute: slower intervals are applied by skipping polls (see
-  // createPoller in src/devices/index.js).
-  poll_frequency: 300,
-  // Reserved key (NOT in config_schema): because the manifest declares both
-  // 'local' and 'cloud' in its `transports` field, Gladys shows a standard
-  // "Prefer the local connection" toggle and sends the user's choice here.
-  // Read-only for the integration; defaults to true.
-  GLADYS_PREFER_LOCAL: true,
+  hub_serial: '',
+  api_key: '',
+  refresh_interval: '60',
+  language: 'fr',
 };
 
 /**
- * Merge the user config with the defaults.
- * @param {Record<string, unknown>} raw config returned by the SDK
+ * The serial number of the hub, as printed on its label or shown in the app:
+ * digits only. Spaces and dashes typed by the user are dropped.
+ * @param {unknown} raw
+ * @returns {string} the digits, '' when unusable
+ */
+export function parseSerial(raw) {
+  if (typeof raw !== 'string' && typeof raw !== 'number') {
+    return '';
+  }
+  const digits = String(raw).replace(/[\s-]/g, '');
+  return /^\d{4,12}$/.test(digits) ? digits : '';
+}
+
+/**
+ * @param {Record<string, unknown>} raw the configuration returned by the SDK
  */
 export function normalizeConfig(raw = {}) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const interval = String(source.refresh_interval ?? DEFAULT_CONFIG.refresh_interval);
+  const language = LANGUAGES.includes(source.language) ? source.language : DEFAULT_CONFIG.language;
   return {
-    ...DEFAULT_CONFIG,
-    ...raw,
-    // Force the types: config may arrive as strings from a form.
-    latitude: Number(raw.latitude ?? DEFAULT_CONFIG.latitude),
-    longitude: Number(raw.longitude ?? DEFAULT_CONFIG.longitude),
-    poll_frequency: Number(raw.poll_frequency ?? DEFAULT_CONFIG.poll_frequency),
-    // The preference is a boolean; anything but an explicit false means true.
-    GLADYS_PREFER_LOCAL: raw.GLADYS_PREFER_LOCAL !== false,
+    hubSerial: parseSerial(source.hub_serial),
+    // A serial was typed, but it is not a serial: said in the connection status.
+    invalidSerial:
+      typeof source.hub_serial === 'string' &&
+      source.hub_serial.trim() !== '' &&
+      parseSerial(source.hub_serial) === '',
+    apiKey: typeof source.api_key === 'string' ? source.api_key.trim() : '',
+    refreshMs:
+      Number(REFRESH_INTERVALS.includes(interval) ? interval : DEFAULT_CONFIG.refresh_interval) *
+      1000,
+    language,
   };
 }
+
+/** Both credentials are there: the cloud can be read. */
+export const isConfigured = (config) => Boolean(config?.hubSerial && config?.apiKey);
